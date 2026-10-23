@@ -28,12 +28,28 @@ class SceneManager(private val player: Player) {
     fun init() {
         baseTile = player.tile
         player.session.write(RebuildRegionNormal(player, gpi = true))
+        sendZoneUpdates()
     }
 
     fun cycle() {
         if(shouldRebuild()) {
             baseTile = player.tile
             player.session.write(RebuildRegionNormal(player, gpi = false))
+            sendZoneUpdates()
+        }
+    }
+
+    fun contains(tile: Tile): Boolean {
+        val base = baseTile.toChunk()
+        val minX = (base.x - 6) * Chunk.SIZE
+        val minY = (base.y - 6) * Chunk.SIZE
+        return tile.level == player.tile.level && tile.x in minX until minX + 104 && tile.y in minY until minY + 104
+    }
+
+    private fun sendZoneUpdates() {
+        val base = baseTile.toChunk()
+        for(x in base.x - 6..base.x + 6) for(y in base.y - 6..base.y + 6) {
+            player.world.zones[Chunk(x, y, player.tile.level)].sendUpdates(player)
         }
     }
 
