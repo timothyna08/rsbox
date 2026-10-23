@@ -34,7 +34,7 @@ class ServerConfig {
 
     object Spec : ConfigSpec("server") {
         val serverName by optional("RSBOX", "server-name")
-        val revision by optional(215, "revision")
+        val revision by optional(217, "revision")
         val devMode by optional(true, "dev-mode")
         val tickRate by optional(600L, "tick-rate")
 

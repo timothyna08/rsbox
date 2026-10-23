@@ -3,7 +3,6 @@ package io.rsbox.server.game
 import io.github.classgraph.ClassGraph
 import io.rsbox.server.script.GameScript
 import org.tinylog.kotlin.Logger
-import kotlin.reflect.full.createInstance
 
 class GameScriptManager {
 
@@ -15,7 +14,7 @@ class GameScriptManager {
             scan.getSubclasses(GameScript::class.java).directOnly().forEach { info ->
                 try {
                     val klass = info.loadClass(GameScript::class.java)
-                    val inst = klass.kotlin.createInstance()
+                    klass.getDeclaredConstructor().newInstance()
                     count++
                 } catch (e: Exception) {
                     Logger.error(e) { "Failed to load plugin: ${info.name}. " }

@@ -1,3 +1,5 @@
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+
 dependencies {
     implementation(project(":server:common"))
     implementation(project(":server:util"))
@@ -14,6 +16,11 @@ dependencies {
 }
 
 subprojects {
+    tasks.withType<KotlinCompile>().configureEach {
+        // Compile game scripts with the PSI frontend; LightTree skips .kts sources.
+        compilerOptions.freeCompilerArgs.add("-Xuse-fir-lt=false")
+    }
+
     dependencies {
         compileOnly(project(":server:common"))
         compileOnly(project(":server:util"))

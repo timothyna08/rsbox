@@ -1,10 +1,11 @@
 .idea/
 .gradle/
+.kotlin/
 build/
 out/
 *.jar
 !gradle-wrapper.jar
-data/
+/data/
 modulus.txt
 jrebel.xml
 *.kt.txt

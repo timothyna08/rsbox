@@ -23,7 +23,7 @@ import kotlin.system.exitProcess
 object SetupLauncher {
 
     private const val CACHE_URL = "https://archive.openrs2.org/caches/runescape/1563/disk.zip"
-    private const val XTEAS_URL = "https://archive.openrs2.org/caches/runescape/1551/keys.json"
+    private const val XTEAS_URL = "https://archive.openrs2.org/caches/runescape/1563/keys.json"
 
     private val DATA_DIR = File("data/")
 
