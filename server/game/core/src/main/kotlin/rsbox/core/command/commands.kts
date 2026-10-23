@@ -6,6 +6,12 @@ import io.rsbox.server.engine.model.Privilege
 import io.rsbox.server.engine.model.coord.Tile
 import io.rsbox.server.engine.model.entity.Npc
 
+// Prints the player's exact tile for mapping interactions in the editor.
+on_command("showcoord") { player, _ ->
+    val tile = player.tile
+    player.sendGameMessage("Your coordinates: ${tile.x}, ${tile.y}, floor ${tile.level}")
+}
+
 on_command("test") { player, args ->
     player.sendGameMessage("Spawning test NPC")
     val npc = Npc(npcs.man_3107, player.tile.translate(Direction.SOUTH))
