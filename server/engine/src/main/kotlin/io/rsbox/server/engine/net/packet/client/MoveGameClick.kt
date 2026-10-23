@@ -15,6 +15,7 @@ class MoveGameClick(val tile: Tile, val clickType: Int) : Packet {
 
     override fun handle(session: Session) {
         val player = session.player
+        player.interactions.cancel()
         if(clickType == 1 || clickType == 2) {
             player.teleportTo(tile)
         } else {

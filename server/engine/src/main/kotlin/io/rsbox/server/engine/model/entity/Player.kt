@@ -5,6 +5,7 @@ import io.rsbox.server.config.ServerConfig
 import io.rsbox.server.engine.event.EventBus.publish
 import io.rsbox.server.engine.event.PlayerLoginEvent
 import io.rsbox.server.engine.event.PlayerLogoutEvent
+import io.rsbox.server.engine.interaction.InteractionManager
 import io.rsbox.server.engine.model.Appearance
 import io.rsbox.server.engine.model.Privilege
 import io.rsbox.server.engine.model.World
@@ -40,6 +41,7 @@ class Player internal constructor(val session: Session) : Entity() {
     val scene = SceneManager(this)
     val ui = InterfaceManager(this)
     val vars = VarpManager(this)
+    val interactions = InteractionManager(this)
 
     override val sizeX = 1
     override val sizeY = 1

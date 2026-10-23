@@ -12,6 +12,7 @@ class PlayerPreSyncTask : SyncTask {
     override suspend fun execute() {
             world.players.forEachEntry { player ->
                 player.movement.cycle()
+                player.interactions.cycle()
                 player.scene.cycle()
             }
     }
