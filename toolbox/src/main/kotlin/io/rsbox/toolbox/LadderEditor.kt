@@ -422,19 +422,14 @@ private class EditorWindow : JFrame("RSBox Ladder Editor") {
     private fun validate(link: LadderLink, world: WorldData): String? {
         val ladder = world.ladders.firstOrNull { it.id == link.objectId && it.point == link.source }
             ?: return "The source ladder was not found in the game cache."
-        val option = ladder.options.firstOrNull { it.number == link.option }
-            ?: return "That climb option is not available on this ladder."
+        if(ladder.options.none { it.number == link.option }) {
+            return "That climb option is not available on this ladder."
+        }
         val target = link.destination
         if(target.x !in 0..16383 || target.y !in 0..16383 || target.level !in 0..3) {
             return "The arrival tile must have valid coordinates and a floor from 0 to 3."
         }
         if(link.source == target) return "The arrival tile must differ from the source."
-        if(option.name.contains("up", true) && target.level <= link.source.level) {
-            return "Climb-up must arrive on a higher floor."
-        }
-        if(option.name.contains("down", true) && target.level >= link.source.level) {
-            return "Climb-down must arrive on a lower floor."
-        }
         val regionId = (target.x / 64 shl 8) or (target.y / 64)
         if(regionId !in world.regions) return "The arrival tile is outside the loaded game map."
         return null
