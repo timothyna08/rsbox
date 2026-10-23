@@ -19,9 +19,13 @@ import java.awt.Font
 import java.awt.Graphics
 import java.awt.Graphics2D
 import java.awt.GridLayout
+import java.awt.KeyboardFocusManager
 import java.awt.RenderingHints
+import java.awt.event.ActionEvent
+import java.awt.event.KeyEvent
 import java.awt.event.MouseAdapter
 import java.awt.event.MouseEvent
+import javax.swing.AbstractAction
 import javax.swing.BorderFactory
 import javax.swing.BoxLayout
 import javax.swing.DefaultComboBoxModel
@@ -29,15 +33,18 @@ import javax.swing.DefaultListModel
 import javax.swing.JButton
 import javax.swing.JComboBox
 import javax.swing.JFrame
+import javax.swing.JComponent
 import javax.swing.JLabel
 import javax.swing.JList
 import javax.swing.JOptionPane
 import javax.swing.JPanel
 import javax.swing.JScrollPane
 import javax.swing.JTextField
+import javax.swing.KeyStroke
 import javax.swing.ListSelectionModel
 import javax.swing.SwingUtilities
 import javax.swing.SwingWorker
+import javax.swing.text.JTextComponent
 import kotlin.math.abs
 import kotlin.math.min
 
@@ -109,6 +116,7 @@ private class EditorWindow : JFrame("RSBox Ladder Editor") {
         layout = BorderLayout(8, 8)
         add(buildToolbar(), BorderLayout.NORTH)
         add(buildMain(), BorderLayout.CENTER)
+        bindHotkeys()
         status.border = BorderFactory.createEmptyBorder(5, 10, 7, 10)
         add(status, BorderLayout.SOUTH)
         loadWorld()
@@ -185,10 +193,10 @@ private class EditorWindow : JFrame("RSBox Ladder Editor") {
             }
         })
         details.add(destinationLabel)
-        details.add(JButton("Suggest nearby ladder").apply { addActionListener { suggestDestination() } })
+        details.add(JButton("Suggest nearby ladder (Z)").apply { addActionListener { suggestDestination() } })
         details.add(suggestionLabel)
-        details.add(JButton("Use suggested tile").apply {
-            addActionListener { suggestion?.let { setDestination(it) } }
+        details.add(JButton("Use suggested tile (X)").apply {
+            addActionListener { useSuggestedTile() }
         })
         details.add(JLabel("Saved connections"))
         linkList.selectionMode = ListSelectionModel.SINGLE_SELECTION
@@ -207,12 +215,26 @@ private class EditorWindow : JFrame("RSBox Ladder Editor") {
         }
         details.add(JScrollPane(linkList).apply { preferredSize = Dimension(325, 270) })
         val buttons = JPanel(GridLayout(2, 2, 5, 5))
-        buttons.add(JButton("Add / update").apply { addActionListener { addOrUpdate() } })
+        buttons.add(JButton("Add / update (C)").apply { addActionListener { addOrUpdate() } })
         buttons.add(JButton("Remove").apply { addActionListener { removeLink() } })
         buttons.add(JButton("Save to project").apply { addActionListener { saveLinks() } })
         details.add(buttons)
         content.add(details, BorderLayout.EAST)
         return content
+    }
+
+    private fun bindHotkeys() {
+        fun bind(key: Int, name: String, action: () -> Unit) {
+            rootPane.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke(key, 0), name)
+            rootPane.actionMap.put(name, object : AbstractAction() {
+                override fun actionPerformed(event: ActionEvent) {
+                    if(KeyboardFocusManager.getCurrentKeyboardFocusManager().focusOwner !is JTextComponent) action()
+                }
+            })
+        }
+        bind(KeyEvent.VK_Z, "suggestLadder", ::suggestDestination)
+        bind(KeyEvent.VK_X, "useSuggestedTile", ::useSuggestedTile)
+        bind(KeyEvent.VK_C, "addOrUpdateLadder", ::addOrUpdate)
     }
 
     private fun loadWorld() {
@@ -347,6 +369,10 @@ private class EditorWindow : JFrame("RSBox Ladder Editor") {
         suggestion = nearby?.point
         suggestionLabel.text = nearby?.let { "Suggested: ${format(it.point)}" } ?: "No nearby ladder found"
         nearby?.let { goTo(it.point) }
+    }
+
+    private fun useSuggestedTile() {
+        suggestion?.let { setDestination(it) }
     }
 
     private fun editLink(link: LadderLink) {
