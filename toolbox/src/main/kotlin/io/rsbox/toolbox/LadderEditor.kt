@@ -77,6 +77,7 @@ private class EditorWindow : JFrame("RSBox Ladder Editor") {
     private val linkModel = DefaultListModel<LadderLink>()
     private val linkList = JList(linkModel)
     private val sourceLabel = JLabel("Select a ladder on the map or from the list")
+    private val connectionLabel = JLabel("Select a ladder to see its connection")
     private val destinationLabel = JLabel("No arrival tile selected")
     private val suggestionLabel = JLabel("No suggestion selected")
     private val optionBox = JComboBox<Option>()
@@ -133,6 +134,22 @@ private class EditorWindow : JFrame("RSBox Ladder Editor") {
     private fun buildMain(): JPanel {
         val content = JPanel(BorderLayout(8, 8))
         ladderList.selectionMode = ListSelectionModel.SINGLE_SELECTION
+        ladderList.cellRenderer = object : javax.swing.DefaultListCellRenderer() {
+            override fun getListCellRendererComponent(list: JList<*>, value: Any?, index: Int,
+                isSelected: Boolean, cellHasFocus: Boolean): java.awt.Component {
+                val ladder = value as? Ladder
+                val links = ladder?.let(::linksFor).orEmpty()
+                val label = if(ladder == null) "" else {
+                    val name = ladder.name.replace("&", "&amp;").replace("<", "&lt;")
+                    val place = "${ladder.point.x},${ladder.point.y},L${ladder.point.level}"
+                    if(links.isEmpty()) "<html>○ $name #${ladder.id}<br>$place · Not connected</html>"
+                    else "<html>✓ $name #${ladder.id} · $place<br>${links.joinToString("<br>") {
+                        "Option ${it.option} → ${it.destination.x},${it.destination.y},L${it.destination.level}"
+                    }}</html>"
+                }
+                return super.getListCellRendererComponent(list, label, index, isSelected, cellHasFocus)
+            }
+        }
         ladderList.addListSelectionListener {
             if(!it.valueIsAdjusting) ladderList.selectedValue?.let(::selectSource)
         }
@@ -159,6 +176,8 @@ private class EditorWindow : JFrame("RSBox Ladder Editor") {
         details.add(sourceLabel)
         details.add(JLabel("Click option"))
         details.add(optionBox)
+        optionBox.addActionListener { updateConnectionIndicator() }
+        details.add(connectionLabel)
         details.add(JButton("Pick arrival tile on map").apply {
             addActionListener {
                 pickingDestination = true
@@ -227,6 +246,7 @@ private class EditorWindow : JFrame("RSBox Ladder Editor") {
                     data = get()
                     data!!.ladders.forEach(ladderModel::addElement)
                     data!!.links.forEach(linkModel::addElement)
+                    ladderList.repaint()
                     val invalid = data!!.links.count { validate(it, data!!) != null }
                     status.text = if(invalid == 0) "Loaded ${data!!.ladders.size} climbable objects. Select a ladder to begin."
                         else "$invalid saved connections need correction before saving."
@@ -298,6 +318,7 @@ private class EditorWindow : JFrame("RSBox Ladder Editor") {
         destinationLabel.text = "No arrival tile selected"
         suggestionLabel.text = "No suggestion selected"
         optionBox.model = DefaultComboBoxModel(ladder.options.toTypedArray())
+        updateConnectionIndicator()
         pickingDestination = false
         goTo(ladder.point)
         status.text = "Selected ${ladder.name}. Choose its option and an arrival tile."
@@ -336,6 +357,18 @@ private class EditorWindow : JFrame("RSBox Ladder Editor") {
         setDestination(link.destination)
     }
 
+    // Read from the current list so the indicator updates before saving too.
+    private fun linksFor(ladder: Ladder) = (0 until linkModel.size()).map(linkModel::getElementAt)
+        .filter { it.objectId == ladder.id && it.source == ladder.point }
+
+    private fun updateConnectionIndicator() {
+        val ladder = source
+        val option = optionBox.selectedItem as? Option
+        val link = if(ladder == null || option == null) null else linksFor(ladder).firstOrNull { it.option == option.number }
+        connectionLabel.text = if(link == null) "Not connected" else "Connected to: ${format(link.destination)}"
+        connectionLabel.foreground = if(link == null) Color(125, 125, 125) else Color(30, 140, 55)
+    }
+
     private fun addOrUpdate() {
         val world = data ?: return
         val ladder = source ?: return showError("Select a source ladder first.")
@@ -350,6 +383,8 @@ private class EditorWindow : JFrame("RSBox Ladder Editor") {
         }
         if(existing == null) linkModel.addElement(link) else linkModel.setElementAt(link, existing)
         dirty = true
+        updateConnectionIndicator()
+        ladderList.repaint()
         status.text = "Connection ready. Click Save to project to keep it."
         map.repaint()
     }
@@ -359,6 +394,8 @@ private class EditorWindow : JFrame("RSBox Ladder Editor") {
         if(index < 0) return showError("Select a saved connection to remove.")
         linkModel.remove(index)
         dirty = true
+        updateConnectionIndicator()
+        ladderList.repaint()
         status.text = "Connection removed. Click Save to project to keep the change."
         map.repaint()
     }
@@ -468,14 +505,16 @@ private class EditorWindow : JFrame("RSBox Ladder Editor") {
             }
             data?.ladders?.forEach { ladder ->
                 if(ladder.point.level == level && ladder.point.x in viewX until viewX + 64 && ladder.point.y in viewY until viewY + 64) {
-                    drawMarker(g, ladder.point, Color(65, 205, 223), left, top, cell)
+                    val color = if(linksFor(ladder).isEmpty()) Color(65, 205, 223) else Color(108, 232, 115)
+                    drawMarker(g, ladder.point, color, left, top, cell)
                 }
             }
             suggestion?.let { drawMarker(g, it, Color(255, 210, 79), left, top, cell) }
             destination?.let { drawMarker(g, it, Color(105, 150, 255), left, top, cell) }
-            source?.let { drawMarker(g, it.point, Color(108, 232, 115), left, top, cell) }
+            source?.let { drawMarker(g, it.point, Color(255, 150, 65), left, top, cell) }
             g.font = Font(Font.SANS_SERIF, Font.PLAIN, 12)
             g.color = Color.WHITE
+            g.drawString("Green: connected   Cyan: unconnected   Orange: selected", left, top - 6)
             g.drawString("Region ${viewX / 64}, ${viewY / 64} · X $viewX–${viewX + 63} · Y $viewY–${viewY + 63} · floor $level", left, top + 64 * cell + 17)
             g.dispose()
         }
